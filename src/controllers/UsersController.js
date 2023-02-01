@@ -20,6 +20,7 @@ class UsersController {
     }
 
     const hashedPassword = await hash(password, 8)
+    
     await knex("users").insert({
       name,
       email,
