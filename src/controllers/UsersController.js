@@ -6,7 +6,7 @@ class UsersController {
   async create(request, response) {
     const { name, email, password } = request.body;
 
-    if (!name || !email || !password.lenght >= 6) {
+    if (!name || !email || !password) {
       throw new AppError ("Não foi possivel fazer cadastro, verifique as informações inseridas.")
     }
 
