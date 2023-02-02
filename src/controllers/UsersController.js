@@ -4,7 +4,7 @@ const { hash } = require("bcrypt")
 
 class UsersController {
   async create(request, response) {
-    const { name, email, password } = request.body;
+    const { name, email, password, isAdmin } = request.body;
 
     if (!name || !email || !password) {
       throw new AppError ("Não foi possivel fazer cadastro, verifique as informações inseridas.")
@@ -24,7 +24,8 @@ class UsersController {
     await knex("users").insert({
       name,
       email,
-      password: hashedPassword
+      password: hashedPassword,
+      isAdmin
     })
 
     return response.json();

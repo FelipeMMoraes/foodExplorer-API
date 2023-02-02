@@ -15,7 +15,7 @@ class DishController{
       description,
       price,
       category,
-      image : null
+      image
     })
 
     return response.json()

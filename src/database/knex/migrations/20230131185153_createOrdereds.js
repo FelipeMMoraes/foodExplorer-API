@@ -1,8 +1,7 @@
 exports.up = knex => knex.schema.createTable("ordereds", table => {
   table.increments("id");
 
-  table.string("statusCode");
-  table.string("statusDescription");
+  table.string("status");
 
   table.timestamp("created_at").default(knex.fn.now());
   table.timestamp("updated_at").default(knex.fn.now());
