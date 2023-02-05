@@ -1,5 +1,6 @@
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
+const statusValidation = require("../middlewares/statusValidation");
 
 class OrderedsAdminController{
   async show(request, response){
@@ -10,7 +11,7 @@ class OrderedsAdminController{
 
   async update(request, response){
     const { user_id, id } = request.params
-    const { statusCode, statusDescription } = request.body
+    const { status } = request.body
 
     const user = await knex("users").where({ id: user_id }).select().first()
     // user = usuario e suas info
@@ -19,17 +20,10 @@ class OrderedsAdminController{
       throw new AppError("Não é possivel atualizar os pedidos com uma conta cliente")
     }
 
-    if(
-      statusCode === "Aguardando" ||
-      statusCode === "Preparando" ||
-      statusCode === "Entregue"
-    ) {
-      await knex("ordereds").where({ id }).update({ statusCode, updated_at: knex.fn.now() })
-      await knex("ordereds").where({ id }).update({ statusDescription, updated_at: knex.fn.now() })
-    } else {
-      throw new AppError("Não é possivel atualizar o pedido, verifique as informações")
+    if(statusValidation) {
+      await knex("ordereds").where({ id }).update({ status, updated_at: knex.fn.now() })
     }
-
+    
     return response.json()
   }
 

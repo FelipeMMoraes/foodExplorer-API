@@ -4,16 +4,15 @@ const AppError = require("../utils/AppError");
 class OrderedsController{
 
   async create(request, response){
-    const { statusCode, statusDescription } = request.body;
+    const { status } = request.body;
     const { user_id } = request.params;
 
-    if(!statusCode || !statusDescription) {
+    if(!status) {
       throw new AppError("Não foi possivel realizar o pedido, por favor verifique as informações")
     }
 
     await knex("ordereds").insert({
-      statusCode,
-      statusDescription,
+      status,
       user_id
     })
     
