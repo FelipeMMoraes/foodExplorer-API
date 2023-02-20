@@ -92,6 +92,18 @@ class DishController {
       ingredients: dishIngredients
     })
   }
+
+  async index(_request, response) {
+    const dishes = await knex('dish')
+      .select('dish.id', 'dish.name', 'dish.description', 'dish.price', 'dish.category', 'dish.image')
+      .leftJoin('dish_ingredients', 'dish.id', 'dish_ingredients.dish_id')
+      .leftJoin('ingredients', 'dish_ingredients.ingredient_id', 'ingredients.id')
+      .select('ingredients.name as ingredient_name')
+      .groupBy('dish.id')
+      .orderBy('dish.name');
+  
+    return response.json(dishes);
+  }
 }
 
 module.exports = DishController
