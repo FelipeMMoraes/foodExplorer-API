@@ -1,3 +1,4 @@
+const { request, response } = require("express");
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 
@@ -46,6 +47,50 @@ class DishController {
     await knex('dish_ingredients').insert(dishIngredientsInsert);
   
     return response.json("Prato salvo com sucesso");
+  }
+
+  async delete(request, response){
+    const { id } = request.params
+
+    const dish = await knex('dish').where({ id }).first();
+
+    if(!dish) {
+      throw new AppError("Prato não encontrado")
+    }
+
+    await knex.transaction(async (trx) => {
+      await trx("dish_ingredients").where({ dish_id: id }).delete()
+      await trx("dish").where({ id }).delete()
+    });
+
+    return response.json("Prato excluido com sucesso")
+  }
+
+  async show(request, response){
+    const { id } = request.params
+
+    // faz uma consulta no banco de dados para encontrar o prato com o id correspondente
+    const dish = await knex("dish").where({ id }).first();
+
+    if (!dish) { // se o prato não for encontrado, retorna um erro
+      throw new AppError("Prato nao encontrado!")
+    }
+
+    const dishIngredients = await knex("dish_ingredients")
+    .where({ dish_id: id })
+    .join('ingredients', 'dish_ingredients.ingredient_id', '=', 'ingredients.id')
+    .select('ingredients.name'); // faz uma consulta no banco de dados para recuperar os ingredientes do prato com o id correspondente
+
+    // cria um objeto com as informações do prato e seus ingredientes
+    return response.json({
+      id: dish.id,
+      name: dish.name,
+      description: dish.description,
+      price: dish.price,
+      image: dish.image,
+      category: dish.category,
+      ingredients: dishIngredients
+    })
   }
 }
 
