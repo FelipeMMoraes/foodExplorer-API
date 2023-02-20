@@ -49,6 +49,89 @@ class DishController {
     return response.json("Prato salvo com sucesso");
   }
 
+  async update(request, response) {
+    const { id } = request.params;
+    const {
+      name,
+      description,
+      price,
+      category,
+      image,
+      ingredients_to_add = [],
+      ingredients_to_remove = [],
+    } = request.body;
+  
+    const dish = await knex('dish').where({ id }).first();
+    if (!dish) {
+      throw new AppError('Prato não encontrado');
+    }
+  
+    let ingredientIdsToAdd = [];
+    if (ingredients_to_add.length > 0) {
+      const newIngredients = await knex('ingredients').whereIn('name', ingredients_to_add);
+  
+      const newIngredientsNames = newIngredients.map(ingredient => ingredient.name);
+  
+      const notFoundIngredients = ingredients_to_add.filter(
+        ingredientName => !newIngredientsNames.includes(ingredientName)
+      );
+  
+      if (notFoundIngredients.length > 0) {
+        throw new AppError(`Os seguintes ingredientes não foram encontrados: ${notFoundIngredients.join(', ')}`);
+      }
+  
+      ingredientIdsToAdd = newIngredients.map(ingredient => ingredient.id);
+    }
+  
+    let ingredientIdsToRemove = [];
+    if (ingredients_to_remove.length > 0) {
+      const ingredients = await knex('ingredients').whereIn('name', ingredients_to_remove);
+  
+      const ingredientsNames = ingredients.map(ingredient => ingredient.name);
+  
+      const notFoundIngredients = ingredients_to_remove.filter(
+        ingredientName => !ingredientsNames.includes(ingredientName)
+      );
+  
+      if (notFoundIngredients.length > 0) {
+        throw new AppError(`Os seguintes ingredientes não foram encontrados: ${notFoundIngredients.join(', ')}`);
+      }
+  
+      ingredientIdsToRemove = ingredients.map(ingredient => ingredient.id);
+    }
+  
+    const trx = await knex.transaction();
+    try {
+      await trx('dish_ingredients').where({ dish_id: id }).delete();
+  
+      if (ingredientIdsToAdd.length > 0) {
+        const dishIngredientsToAdd = ingredientIdsToAdd.map(ingredientId => ({ dish_id: id, ingredient_id: ingredientId }));
+        await trx('dish_ingredients').insert(dishIngredientsToAdd);
+      }
+  
+      if (ingredientIdsToRemove.length > 0) {
+        await trx('dish_ingredients').whereIn('ingredient_id', ingredientIdsToRemove).delete();
+      }
+  
+      const newDish = {
+        name: name || dish.name,
+        description: description || dish.description,
+        price: price || dish.price,
+        category: category || dish.category,
+        image: image || dish.image,
+      };
+  
+      await trx('dish').where({ id }).update(newDish);
+  
+      await trx.commit();
+  
+      return response.json({ id, ...newDish });
+    } catch (err) {
+      await trx.rollback();
+      throw new AppError('Erro ao atualizar prato');
+    }
+  }
+
   async delete(request, response){
     const { id } = request.params
 
@@ -95,10 +178,9 @@ class DishController {
 
   async index(_request, response) {
     const dishes = await knex('dish')
-      .select('dish.id', 'dish.name', 'dish.description', 'dish.price', 'dish.category', 'dish.image')
+      .select('dish.id', 'dish.name', 'dish.description', 'dish.price', 'dish.category', 'dish.image', knex.raw('GROUP_CONCAT(ingredients.name, ", ") as ingredients'))
       .leftJoin('dish_ingredients', 'dish.id', 'dish_ingredients.dish_id')
       .leftJoin('ingredients', 'dish_ingredients.ingredient_id', 'ingredients.id')
-      .select('ingredients.name as ingredient_name')
       .groupBy('dish.id')
       .orderBy('dish.name');
   
