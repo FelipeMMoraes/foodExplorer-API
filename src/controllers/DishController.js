@@ -1,4 +1,3 @@
-const { request, response } = require("express");
 const knex = require("../database/knex");
 const AppError = require("../utils/AppError");
 
