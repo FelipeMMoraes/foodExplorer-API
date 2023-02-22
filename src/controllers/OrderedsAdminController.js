@@ -3,7 +3,7 @@ const AppError = require("../utils/AppError");
 const statusValidation = require("../middlewares/statusValidation");
 
 class OrderedsAdminController{
-  async show(request, response){
+  async show(_request, response){
     const orders = await knex('ordereds')
 
     return response.json(orders)
